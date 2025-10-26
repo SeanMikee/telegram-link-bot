@@ -1,5 +1,6 @@
+import os
+import re
 from pyrogram import Client, filters
-import os, re
 from threading import Thread
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -9,6 +10,7 @@ api_hash = os.environ.get("API_HASH")
 bot_token = os.environ.get("BOT_TOKEN")
 
 app = Client("link_remover_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
+
 url_pattern = re.compile(r"(https?://\S+|www\.\S+)")
 
 @app.on_message(filters.group & filters.text)
@@ -22,7 +24,7 @@ async def delete_links(client, message):
         except:
             pass
 
-# Dummy HTTP server to keep Koyeb Web Service alive
+# Dummy HTTP server to satisfy Koyeb Web Service health check
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -30,7 +32,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(b"Bot is running")
 
 def run_server():
-    server = HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 8080))), Handler)
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), Handler)
     server.serve_forever()
 
 # Start HTTP server in a separate thread
