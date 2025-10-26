@@ -1,30 +1,40 @@
-import os
-import re
 from pyrogram import Client, filters
+import os, re
+from threading import Thread
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
-# Load credentials from environment variables
+# Telegram bot credentials
 api_id = int(os.environ.get("API_ID"))
 api_hash = os.environ.get("API_HASH")
 bot_token = os.environ.get("BOT_TOKEN")
 
 app = Client("link_remover_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
-
-# Regex to detect links
 url_pattern = re.compile(r"(https?://\S+|www\.\S+)")
 
 @app.on_message(filters.group & filters.text)
 async def delete_links(client, message):
-    # Skip admins
     chat_member = await client.get_chat_member(message.chat.id, message.from_user.id)
     if chat_member.status in ["administrator", "creator"]:
         return
-
-    # Delete message if it contains a link
     if url_pattern.search(message.text):
         try:
             await message.delete()
         except:
             pass
+
+# Dummy HTTP server to keep Koyeb Web Service alive
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running")
+
+def run_server():
+    server = HTTPServer(("0.0.0.0", int(os.environ.get("PORT", 8080))), Handler)
+    server.serve_forever()
+
+# Start HTTP server in a separate thread
+Thread(target=run_server).start()
 
 print("Bot is running...")
 app.run()
